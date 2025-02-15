@@ -25,11 +25,18 @@ export default function ShakaPlayer() {
         }
       });
 
+      const drmConfig = {};
+      drmConfig["com.apple.fps"] = "https://c8eaeae1-drm-fairplay-licensing.axprod.net/AcquireLicense";
       playerRef.current.configure({
-        "com.apple.fps": "https://travelxp.akamaized.net/cert/fairplay/fairplay.cer",
         drm: {
-          servers: {
-            "com.apple.fps": "https://c8eaeae1-drm-fairplay-licensing.axprod.net/AcquireLicense"
+          servers: drmConfig,
+          advanced: {
+            "com.apple.fps": {
+              serverCertificateUri: "https://travelxp.akamaized.net/cert/fairplay/fairplay.cer",
+              getContentId: (emeOptions, initData) => {
+                return new TextDecoder().decode(initData.filter((item) => item !== 0 && item !== 150));
+              }
+            }
           }
         }
       });
