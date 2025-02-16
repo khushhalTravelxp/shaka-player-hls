@@ -6,6 +6,48 @@ export default function ShakaPlayer() {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
 
+  async function keepOnlyH264FromM3U8(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        
+        const m3u8Text = await response.text();
+        const lines = m3u8Text.split("\n");
+        
+        let filteredLines = [];
+        let keepNextLine = false;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            // Check if the line contains the H.264 codec
+            if (line.includes('CODECS="avc1"')) {
+                filteredLines.push(line); // Keep the codec line
+                keepNextLine = true; // Keep the next line (URL)
+                continue;
+            }
+
+            if (keepNextLine) {
+                filteredLines.push(line); // Keep the stream URL
+                keepNextLine = false;
+                continue;
+            }
+        }
+
+        return filteredLines.join("\n");
+    } catch (error) {
+        console.error("Error fetching or processing M3U8:", error);
+        return null;
+    }
+}
+
+// Example usage
+keepOnlyH264FromM3U8("https://travelxp.akamaized.net/5ffe9c0a623b58327a2e5163/manifest_v2_hd_15032024_1846.m3u8")
+    .then(cleanedM3U8 => {
+        console.log(cleanedM3U8); // Print or save the filtered M3U8 file
+    });
+
+
   useEffect(() => {
     async function initPlayer() {
       if (!videoRef.current) return;
@@ -42,7 +84,7 @@ export default function ShakaPlayer() {
       });
 
       try {
-        await playerRef.current.load("https://travelxp.akamaized.net/5ffe9c0a623b58327a2e5163/manifest_v2_hd_15032024_1846.m3u8");
+        await playerRef.current.load(keepOnlyH264FromM3U8('https://travelxp.akamaized.net/5ffe9c0a623b58327a2e5163/manifest_v2_hd_15032024_1846.m3u8'));
         console.log("The video has been loaded successfully!");
       } catch (error) {
         console.error("Error loading video", error);
